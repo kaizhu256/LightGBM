@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
+from . import rollup
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
                     _LGBM_BoosterEvalMethodResultType, _LGBM_CategoricalFeatureConfiguration,
                     _LGBM_CustomObjectiveFunction, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
@@ -288,7 +289,9 @@ def train(
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
         booster.model_from_string(booster.model_to_string()).free_dataset()
-    return booster
+    return rollup.train2(
+        booster,
+    )
 
 
 class CVBooster:
