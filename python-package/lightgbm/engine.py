@@ -287,10 +287,9 @@ def train(
     booster.best_score = collections.defaultdict(collections.OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
-    if not keep_training_booster:
-        booster.model_from_string(booster.model_to_string()).free_dataset()
     return rollup.train2(
         booster,
+        keep_training_booster,
     )
 
 
