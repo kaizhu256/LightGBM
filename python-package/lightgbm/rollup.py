@@ -7,6 +7,7 @@ import ctypes
 import json
 import os
 import pathlib
+import sys
 import typing
 
 import numpy as np
@@ -47,7 +48,7 @@ def _json_default_with_numpy(obj: typing.Any) -> typing.Any:
 def _log_callback(msg: bytes) -> None:
     """Redirect logs from native library into Python."""
     # !! getattr(_LOGGER, _INFO_METHOD_NAME)(str(msg.decode('utf-8')))
-    print(str(msg.decode('utf-8')))
+    print(str(msg.decode('utf-8')), file=sys.stderr)
 
 
 def _safe_call(ret: int) -> None:
@@ -131,15 +132,10 @@ def train2(
     return booster
 
 
-
-
-"""Macro definition of feature importance type"""
-_C_API_FEATURE_IMPORTANCE_SPLIT = 0
-_C_API_FEATURE_IMPORTANCE_GAIN = 1
 """String name to int feature importance type mapper"""
 _FEATURE_IMPORTANCE_TYPE_MAPPER = {
-    "split": _C_API_FEATURE_IMPORTANCE_SPLIT,
-    "gain": _C_API_FEATURE_IMPORTANCE_GAIN
+    "split": 0,
+    "gain": 1,
 }
 # we don't need lib_lightgbm while building docs
 _LIB: ctypes.CDLL
