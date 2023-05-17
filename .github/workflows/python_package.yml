@@ -79,12 +79,12 @@ jobs:
           export PATH=${CONDA}/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1
-  all-python-package-jobs-successful:
-    if: always()
-    runs-on: ubuntu-latest
-    needs: [test]
-    steps:
-    - name: Note that all tests succeeded
-      uses: re-actors/alls-green@v1.2.2
-      with:
-        jobs: ${{ toJSON(needs) }}
+  # !! all-python-package-jobs-successful:
+    # !! if: always()
+    # !! runs-on: ubuntu-latest
+    # !! needs: [test]
+    # !! steps:
+    # !! - name: Note that all tests succeeded
+      # !! uses: re-actors/alls-green@v1.2.2
+      # !! with:
+        # !! jobs: ${{ toJSON(needs) }}

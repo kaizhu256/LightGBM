@@ -5,13 +5,9 @@ Contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
 """
 from pathlib import Path
 
-# !! from .basic import Booster, Dataset, Sequence, register_logger
-from .basic import Sequence, register_logger
+from .basic import Booster, Dataset, Sequence, register_logger
 from .callback import early_stopping, log_evaluation, record_evaluation, reset_parameter
-# !! from .engine import CVBooster, cv, train
-from .engine import CVBooster, cv
-
-from .rollup import Booster, Dataset, train
+from .engine import CVBooster, cv, train
 
 try:
     from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor
