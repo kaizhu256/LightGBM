@@ -3,14 +3,158 @@
 
 # !! from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import ctypes
+import json
+import os
+import pathlib
+import typing
+
+import numpy as np
+
+from . import libpath
+
 # !! from .basic import Booster, Dataset
 
 
+class LightGBMError(Exception):
+    """Error thrown by LightGBM."""
+
+    pass
+
+
+def _dump_pandas_categorical(
+    pandas_categorical: typing.Optional[typing.List[typing.List]],
+    file_name: typing.Optional[typing.Union[str, pathlib.Path]] = None
+) -> str:
+    categorical_json = json.dumps(pandas_categorical, default=_json_default_with_numpy)
+    pandas_str = f'\npandas_categorical:{categorical_json}\n'
+    if file_name is not None:
+        with open(file_name, 'a') as f:
+            f.write(pandas_str)
+    return pandas_str
+
+
+def _json_default_with_numpy(obj: typing.Any) -> typing.Any:
+    """Convert numpy classes to JSON serializable objects."""
+    if isinstance(obj, (np.integer, np.floating, np.bool_)):
+        return obj.item()
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    else:
+        return obj
+
+
+def _log_callback(msg: bytes) -> None:
+    """Redirect logs from native library into Python."""
+    # !! getattr(_LOGGER, _INFO_METHOD_NAME)(str(msg.decode('utf-8')))
+    print(str(msg.decode('utf-8')))
+
+
+def _safe_call(ret: int) -> None:
+    """Check the return value from C API call.
+
+    Parameters
+    ----------
+    ret : int
+        The return value from C API calls.
+    """
+    if ret != 0:
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
+
+
 def train2(
-    booster
+    booster,
+    keep_training_booster,
 ):
     """Perform the training with given parameters."""
+    def model_to_string(
+        self,
+        num_iteration: typing.Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> str:
+        """Save Booster to string.
+
+        Parameters
+        ----------
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration that should be saved.
+        importance_type : str, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
+
+        Returns
+        -------
+        str_repr : str
+            String representation of Booster.
+        """
+        if num_iteration is None:
+            num_iteration = self.best_iteration
+        importance_type_int = _FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_BoosterSaveModelToString(
+            self.handle,
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(num_iteration),
+            ctypes.c_int(importance_type_int),
+            ctypes.c_int64(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        actual_len = tmp_out_len.value
+        # if buffer length is not long enough, re-allocate a buffer
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_BoosterSaveModelToString(
+                self.handle,
+                ctypes.c_int(start_iteration),
+                ctypes.c_int(num_iteration),
+                ctypes.c_int(importance_type_int),
+                ctypes.c_int64(actual_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer))
+        ret = string_buffer.value.decode('utf-8')
+        ret += _dump_pandas_categorical(self.pandas_categorical)
+        return ret
+
+    # !! self = booster
+    if not keep_training_booster:
+        booster.model_from_string(booster.model_to_string()).free_dataset()
     return booster
+
+
+
+
+"""Macro definition of feature importance type"""
+_C_API_FEATURE_IMPORTANCE_SPLIT = 0
+_C_API_FEATURE_IMPORTANCE_GAIN = 1
+"""String name to int feature importance type mapper"""
+_FEATURE_IMPORTANCE_TYPE_MAPPER = {
+    "split": _C_API_FEATURE_IMPORTANCE_SPLIT,
+    "gain": _C_API_FEATURE_IMPORTANCE_GAIN
+}
+# we don't need lib_lightgbm while building docs
+_LIB: ctypes.CDLL
+if os.environ.get('LIGHTGBM_BUILD_DOC', False):
+    from unittest.mock import Mock  # isort: skip
+    _LIB = Mock(ctypes.CDLL)  # type: ignore
+else:
+    """Load LightGBM library."""
+    lib_path = libpath.find_lib_path()
+    _LIB = ctypes.cdll.LoadLibrary(lib_path[0])
+    _LIB.LGBM_GetLastError.restype = ctypes.c_char_p
+    callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
+    _LIB.callback = callback(_log_callback)  # type: ignore[attr-defined]
+    if _LIB.LGBM_RegisterLogCallback(_LIB.callback) != 0:
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
 
