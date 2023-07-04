@@ -24,9 +24,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-#           - os: macOS-latest
-#             task: regular
-#             python_version: '3.8'
+          - os: macOS-latest
+            task: regular
+            python_version: '3.10'
+          - os: ubuntu-latest
+            task: regular
+            python_version: '3.10'
+          - os: windows-latest
+            task: regular
+            python_version: '3.10'
 #           - os: macOS-latest
 #             task: sdist
 #             python_version: '3.9'
@@ -40,10 +46,10 @@ jobs:
 #             task: mpi
 #             method: source
 #             python_version: '3.9'
-          - os: macOS-latest
-            task: mpi
-            method: pip
-            python_version: '3.10'
+#           - os: macOS-latest
+#             task: mpi
+#             method: pip
+#             python_version: '3.10'
 #           - os: macOS-latest
 #             task: mpi
 #             method: wheel
