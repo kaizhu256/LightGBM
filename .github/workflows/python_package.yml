@@ -3,6 +3,8 @@ name: Python-package
 on:
   push:
     branches:
+    - alpha
+    - beta
     - master
   pull_request:
     branches:
