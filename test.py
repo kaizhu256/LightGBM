@@ -10,6 +10,7 @@ from scipy import sparse
     # !! from lightgbm.basic import _LIB as LIB
 # !! except ModuleNotFoundError:
     # !! print("Could not import lightgbm Python package, looking for lib_lightgbm at the repo root")
+print(system())
 if system() in ('Darwin'):
     lib_file = "./lib_lightgbm.dll"
 elif system() in ('Windows', 'Microsoft'):
