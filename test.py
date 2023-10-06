@@ -36,7 +36,7 @@ def _safe_call(ret: int) -> None:
 
 def c_str(string: str) -> ctypes.c_char_p:
     """Convert a Python string to C string."""
-    return ctypes.c_char_p(string.encode('utf-8'))
+    return ctypes.c_char_p(string.encode("utf-8"))
 
 
 def load_from_file(filename, reference):
@@ -257,7 +257,7 @@ def test_booster():
     free_dataset(train)
     free_dataset(test)
     booster2 = ctypes.c_void_p()
-    model_str = string_buffer.value.decode('utf-8')
+    model_str = string_buffer.value.decode("utf-8")
 
     # LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
     #     const char *model_str,
@@ -273,19 +273,47 @@ def test_booster():
     preb = np.empty(mat.shape[0], dtype=np.float64)
     num_preb = ctypes.c_int64(0)
     data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
+
+    # !! LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMat(
+        # !! BoosterHandle handle,
+        # !! const void *data,
+        # !! int data_type,
+        # !! int32_t nrow,
+        # !! int32_t ncol,
+        # !! int is_row_major,
+        # !! int predict_type,
+        # !! int start_iteration,
+        # !! int num_iteration,
+        # !! const char *parameter,
+        # !! int64_t *out_len,
+        # !! double *out_result)
     _safe_call(LIB.LGBM_BoosterPredictForMat(
+        # !! BoosterHandle handle
         booster2,
+        # !! const void *data
         data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        # !! int data_type
         ctypes.c_int(dtype_float64),
+        # !! int32_t nrow
         ctypes.c_int32(mat.shape[0]),
+        # !! int32_t ncol
         ctypes.c_int32(mat.shape[1]),
+        # !! int is_row_major
         ctypes.c_int(1),
+        # !! int predict_type
         ctypes.c_int(1),
+        # !! int start_iteration
         ctypes.c_int(0),
+        # !! int num_iteration
         ctypes.c_int(25),
+        # !! const char *parameter
         c_str(""),
+        # !! int64_t *out_len
         ctypes.byref(num_preb),
-        preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+        # !! double *out_result
+        preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+    ))
+    # !! print(preb)
     _safe_call(LIB.LGBM_BoosterPredictForFile(
         booster2,
         c_str(str(binary_example_dir / "binary.test")),
