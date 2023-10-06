@@ -5,10 +5,6 @@ from platform import system
 import numpy as np
 from scipy import sparse
 
-# !! try:
-    # !! from lightgbm.basic import _LIB as LIB
-# !! except ModuleNotFoundError:
-    # !! print("Could not import lightgbm Python package, looking for lib_lightgbm at the repo root")
 if system() in ("Darwin"):
     lib_file = "./lib_lightgbm.dylib"
 elif system() in ("Windows", "Microsoft"):
