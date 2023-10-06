@@ -1,3 +1,5 @@
+# !! https://lightgbm.readthedocs.io/en/latest/C-API.html
+
 import ctypes
 from pathlib import Path
 from platform import system
