@@ -12,7 +12,7 @@ from scipy import sparse
     # !! print("Could not import lightgbm Python package, looking for lib_lightgbm at the repo root")
 if system() in ('Darwin'):
     lib_file = "./lib_lightgbm.dll"
-else if system() in ('Windows', 'Microsoft'):
+elif system() in ('Windows', 'Microsoft'):
     lib_file = "./lib_lightgbm.dll"
 else:
     lib_file = "./lib_lightgbm.so"
