@@ -4,6 +4,10 @@ on:
   push:
     branches:
     - master
+    - alpha
+    - beta
+    - master
+  workflow_dispatch:
   pull_request:
     branches:
     - master
