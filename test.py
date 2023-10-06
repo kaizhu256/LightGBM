@@ -21,9 +21,22 @@ dtype_float64 = 1
 dtype_int32 = 2
 dtype_int64 = 3
 
+def _safe_call(ret: int) -> None:
+    """
+    Check the return value from C API call.
 
-def c_str(string):
-    return ctypes.c_char_p(string.encode("utf-8"))
+    Parameters
+    ----------
+    ret : int
+        The return value from C API calls.
+    """
+    if ret != 0:
+        raise Exception(LIB.LGBM_GetLastError().decode("utf-8"))
+
+
+def c_str(string: str) -> ctypes.c_char_p:
+    """Convert a Python string to C string."""
+    return ctypes.c_char_p(string.encode('utf-8'))
 
 
 def load_from_file(filename, reference):
@@ -31,22 +44,22 @@ def load_from_file(filename, reference):
     if reference is not None:
         ref = reference
     handle = ctypes.c_void_p()
-    LIB.LGBM_DatasetCreateFromFile(
+    _safe_call(LIB.LGBM_DatasetCreateFromFile(
         c_str(str(filename)),
         c_str("max_bin=15"),
         ref,
-        ctypes.byref(handle))
+        ctypes.byref(handle)))
     print(LIB.LGBM_GetLastError())
     num_data = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
+    _safe_call(LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data)))
     num_feature = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
+    _safe_call(LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature)))
     print(f"#data: {num_data.value} #feature: {num_feature.value}")
     return handle
 
 
 def save_to_binary(handle, filename):
-    LIB.LGBM_DatasetSaveBinary(handle, c_str(filename))
+    _safe_call(LIB.LGBM_DatasetSaveBinary(handle, c_str(filename)))
 
 
 def load_from_csr(filename, reference):
@@ -58,7 +71,7 @@ def load_from_csr(filename, reference):
     if reference is not None:
         ref = reference
 
-    LIB.LGBM_DatasetCreateFromCSR(
+    _safe_call(LIB.LGBM_DatasetCreateFromCSR(
         csr.indptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
         ctypes.c_int(dtype_int32),
         csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
@@ -69,17 +82,17 @@ def load_from_csr(filename, reference):
         ctypes.c_int64(csr.shape[1]),
         c_str("max_bin=15"),
         ref,
-        ctypes.byref(handle))
+        ctypes.byref(handle)))
     num_data = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
+    _safe_call(LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data)))
     num_feature = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
-    LIB.LGBM_DatasetSetField(
+    _safe_call(LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature)))
+    _safe_call(LIB.LGBM_DatasetSetField(
         handle,
         c_str("label"),
         label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         ctypes.c_int(len(label)),
-        ctypes.c_int(dtype_float32))
+        ctypes.c_int(dtype_float32)))
     print(f"#data: {num_data.value} #feature: {num_feature.value}")
     return handle
 
@@ -93,7 +106,7 @@ def load_from_csc(filename, reference):
     if reference is not None:
         ref = reference
 
-    LIB.LGBM_DatasetCreateFromCSC(
+    _safe_call(LIB.LGBM_DatasetCreateFromCSC(
         csc.indptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
         ctypes.c_int(dtype_int32),
         csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
@@ -104,17 +117,17 @@ def load_from_csc(filename, reference):
         ctypes.c_int64(csc.shape[0]),
         c_str("max_bin=15"),
         ref,
-        ctypes.byref(handle))
+        ctypes.byref(handle)))
     num_data = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
+    _safe_call(LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data)))
     num_feature = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
-    LIB.LGBM_DatasetSetField(
+    _safe_call(LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature)))
+    _safe_call(LIB.LGBM_DatasetSetField(
         handle,
         c_str("label"),
         label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         ctypes.c_int(len(label)),
-        ctypes.c_int(dtype_float32))
+        ctypes.c_int(dtype_float32)))
     print(f"#data: {num_data.value} #feature: {num_feature.value}")
     return handle
 
@@ -129,7 +142,7 @@ def load_from_mat(filename, reference):
     if reference is not None:
         ref = reference
 
-    LIB.LGBM_DatasetCreateFromMat(
+    _safe_call(LIB.LGBM_DatasetCreateFromMat(
         data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         ctypes.c_int(dtype_float64),
         ctypes.c_int32(mat.shape[0]),
@@ -137,23 +150,23 @@ def load_from_mat(filename, reference):
         ctypes.c_int(1),
         c_str("max_bin=15"),
         ref,
-        ctypes.byref(handle))
+        ctypes.byref(handle)))
     num_data = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
+    _safe_call(LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data)))
     num_feature = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
-    LIB.LGBM_DatasetSetField(
+    _safe_call(LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature)))
+    _safe_call(LIB.LGBM_DatasetSetField(
         handle,
         c_str("label"),
         label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         ctypes.c_int(len(label)),
-        ctypes.c_int(dtype_float32))
+        ctypes.c_int(dtype_float32)))
     print(f"#data: {num_data.value} #feature: {num_feature.value}")
     return handle
 
 
 def free_dataset(handle):
-    LIB.LGBM_DatasetFree(handle)
+    _safe_call(LIB.LGBM_DatasetFree(handle))
 
 
 def test_dataset():
@@ -176,44 +189,91 @@ def test_booster():
     train = load_from_mat(binary_example_dir / "binary.train", None)
     test = load_from_mat(binary_example_dir / "binary.test", train)
     booster = ctypes.c_void_p()
-    LIB.LGBM_BoosterCreate(
+    _safe_call(LIB.LGBM_BoosterCreate(
         train,
         c_str("app=binary metric=auc num_leaves=31 verbose=0"),
-        ctypes.byref(booster))
-    LIB.LGBM_BoosterAddValidData(booster, test)
+        ctypes.byref(booster)))
+    _safe_call(LIB.LGBM_BoosterAddValidData(booster, test))
     is_finished = ctypes.c_int(0)
     for i in range(1, 51):
-        LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(is_finished))
+        _safe_call(LIB.LGBM_BoosterUpdateOneIter(booster, ctypes.byref(is_finished)))
         result = np.array([0.0], dtype=np.float64)
         out_len = ctypes.c_int(0)
-        LIB.LGBM_BoosterGetEval(
+        _safe_call(LIB.LGBM_BoosterGetEval(
             booster,
             ctypes.c_int(0),
             ctypes.byref(out_len),
-            result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+            result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if i % 10 == 0:
             print(f"{i} iteration test AUC {result[0]:.6f}")
-    LIB.LGBM_BoosterSaveModel(
+    _safe_call(LIB.LGBM_BoosterSaveModel(
         booster,
         ctypes.c_int(0),
         ctypes.c_int(-1),
         ctypes.c_int(0),
-        c_str("model.txt"))
-    LIB.LGBM_BoosterFree(booster)
+        c_str("model.txt")))
+    # !! LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(
+        # !! BoosterHandle handle,
+        # !! int start_iteration,
+        # !! int num_iteration,
+        # !! int feature_importance_type,
+        # !! const char *filename
+    # !! )
+
+    buffer_len = 0x100000
+    tmp_out_len = ctypes.c_int64(0)
+    string_buffer = ctypes.create_string_buffer(buffer_len)
+    ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+    # LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(
+    #     BoosterHandle handle,
+    #     int start_iteration,
+    #     int num_iteration,
+    #     int feature_importance_type,
+    #     int64_t buffer_len,
+    #     int64_t *out_len, char *out_str
+    # )
+    _safe_call(LIB.LGBM_BoosterSaveModelToString(
+        booster,
+        ctypes.c_int(0),
+        ctypes.c_int(-1),
+        ctypes.c_int(0),
+        ctypes.c_int64(buffer_len),
+        ctypes.byref(tmp_out_len),
+        ptr_string_buffer))
+    actual_len = tmp_out_len.value
+    # if buffer length is not long enough, re-allocate a buffer
+    if actual_len > buffer_len:
+        string_buffer = ctypes.create_string_buffer(actual_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(LIB.LGBM_BoosterSaveModelToString(
+            booster,
+            ctypes.c_int(0),
+            ctypes.c_int(-1),
+            ctypes.c_int(0),
+            ctypes.c_int64(actual_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+    _safe_call(LIB.LGBM_BoosterFree(booster))
     free_dataset(train)
     free_dataset(test)
     booster2 = ctypes.c_void_p()
-    num_total_model = ctypes.c_int(0)
-    LIB.LGBM_BoosterCreateFromModelfile(
-        c_str("model.txt"),
-        ctypes.byref(num_total_model),
-        ctypes.byref(booster2))
+    model_str = string_buffer.value.decode('utf-8')
+
+    # LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(
+    #     const char *model_str,
+    #     int *out_num_iterations,
+    #     BoosterHandle *out
+    # )
+    _safe_call(LIB.LGBM_BoosterLoadModelFromString(
+        c_str(model_str),
+        ctypes.byref(ctypes.c_int(0)),
+        ctypes.byref(booster2)))
     data = np.loadtxt(str(binary_example_dir / "binary.test"), dtype=np.float64)
     mat = data[:, 1:]
     preb = np.empty(mat.shape[0], dtype=np.float64)
     num_preb = ctypes.c_int64(0)
     data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
-    LIB.LGBM_BoosterPredictForMat(
+    _safe_call(LIB.LGBM_BoosterPredictForMat(
         booster2,
         data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         ctypes.c_int(dtype_float64),
@@ -225,8 +285,8 @@ def test_booster():
         ctypes.c_int(25),
         c_str(""),
         ctypes.byref(num_preb),
-        preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
-    LIB.LGBM_BoosterPredictForFile(
+        preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+    _safe_call(LIB.LGBM_BoosterPredictForFile(
         booster2,
         c_str(str(binary_example_dir / "binary.test")),
         ctypes.c_int(0),
@@ -234,8 +294,8 @@ def test_booster():
         ctypes.c_int(0),
         ctypes.c_int(25),
         c_str(""),
-        c_str("preb.txt"))
-    LIB.LGBM_BoosterPredictForFile(
+        c_str("preb.txt")))
+    _safe_call(LIB.LGBM_BoosterPredictForFile(
         booster2,
         c_str(str(binary_example_dir / "binary.test")),
         ctypes.c_int(0),
@@ -243,7 +303,7 @@ def test_booster():
         ctypes.c_int(10),
         ctypes.c_int(25),
         c_str(""),
-        c_str("preb.txt"))
-    LIB.LGBM_BoosterFree(booster2)
+        c_str("preb.txt")))
+    _safe_call(LIB.LGBM_BoosterFree(booster2))
 test_dataset()
 test_booster()
