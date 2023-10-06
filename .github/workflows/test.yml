@@ -89,5 +89,6 @@ jobs:
       # !! - run: sh jslint_ci.sh shCiBase
       # !! # upload build-artifacts to branch-gh-pages
       # !! - run: sh jslint_ci.sh shCiArtifactUpload
+      - run: pip install numpy scipy
       - run: python test.py
 # base - .github/workflows/ci.yml - end
