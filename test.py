@@ -1,7 +1,6 @@
 # !! https://lightgbm.readthedocs.io/en/latest/C-API.html
 
 import ctypes
-from pathlib import Path
 from platform import system
 
 import numpy as np
@@ -172,13 +171,12 @@ def free_dataset(handle):
 
 
 def test_dataset():
-    binary_example_dir = Path()
-    train = load_from_file(binary_example_dir / "binary.train", None)
-    test = load_from_mat(binary_example_dir / "binary.test", train)
+    train = load_from_file("binary.train", None)
+    test = load_from_mat("binary.test", train)
     free_dataset(test)
-    test = load_from_csr(binary_example_dir / "binary.test", train)
+    test = load_from_csr("binary.test", train)
     free_dataset(test)
-    test = load_from_csc(binary_example_dir / "binary.test", train)
+    test = load_from_csc("binary.test", train)
     free_dataset(test)
     save_to_binary(train, "train.binary.bin")
     free_dataset(train)
@@ -187,9 +185,8 @@ def test_dataset():
 
 
 def test_booster():
-    binary_example_dir = Path()
-    train = load_from_mat(binary_example_dir / "binary.train", None)
-    test = load_from_mat(binary_example_dir / "binary.test", train)
+    train = load_from_mat("binary.train", None)
+    test = load_from_mat("binary.test", train)
     booster = ctypes.c_void_p()
     _safe_call(LIB.LGBM_BoosterCreate(
         train,
@@ -270,7 +267,7 @@ def test_booster():
         c_str(model_str),
         ctypes.byref(ctypes.c_int(0)),
         ctypes.byref(booster2)))
-    data = np.loadtxt(str(binary_example_dir / "binary.test"), dtype=np.float64)
+    data = np.loadtxt(str("binary.test"), dtype=np.float64)
     mat = data[:, 1:]
     preb = np.empty(mat.shape[0], dtype=np.float64)
     num_preb = ctypes.c_int64(0)
@@ -318,7 +315,7 @@ def test_booster():
     # !! print(preb)
     _safe_call(LIB.LGBM_BoosterPredictForFile(
         booster2,
-        c_str(str(binary_example_dir / "binary.test")),
+        c_str(str("binary.test")),
         ctypes.c_int(0),
         ctypes.c_int(0),
         ctypes.c_int(0),
@@ -327,7 +324,7 @@ def test_booster():
         c_str("preb.txt")))
     _safe_call(LIB.LGBM_BoosterPredictForFile(
         booster2,
-        c_str(str(binary_example_dir / "binary.test")),
+        c_str(str("binary.test")),
         ctypes.c_int(0),
         ctypes.c_int(0),
         ctypes.c_int(10),
