@@ -4,7 +4,6 @@ import ctypes
 from platform import system
 
 import numpy as np
-from scipy import sparse
 
 if system() in ("Darwin"):
     lib_file = "./lib_lightgbm.dylib"
@@ -40,6 +39,11 @@ def c_str(string: str) -> ctypes.c_char_p:
     return ctypes.c_char_p(string.encode("utf-8"))
 
 
+def save_to_binary(handle, filename):
+    _safe_call(LIB.LGBM_DatasetSaveBinary(handle, c_str(filename)))
+
+
+"""
 def load_from_file(filename, reference):
     ref = None
     if reference is not None:
@@ -57,10 +61,6 @@ def load_from_file(filename, reference):
     _safe_call(LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature)))
     print(f"#data: {num_data.value} #feature: {num_feature.value}")
     return handle
-
-
-def save_to_binary(handle, filename):
-    _safe_call(LIB.LGBM_DatasetSaveBinary(handle, c_str(filename)))
 
 
 def load_from_csr(filename, reference):
@@ -133,6 +133,25 @@ def load_from_csc(filename, reference):
     return handle
 
 
+def free_dataset(handle):
+    _safe_call(LIB.LGBM_DatasetFree(handle))
+
+
+def test_dataset():
+    train = load_from_file("binary.train", None)
+    test = load_from_mat("binary.test", train)
+    free_dataset(test)
+    test = load_from_csr("binary.test", train)
+    free_dataset(test)
+    test = load_from_csc("binary.test", train)
+    free_dataset(test)
+    save_to_binary(train, "train.binary.bin")
+    free_dataset(train)
+    train = load_from_file("train.binary.bin", None)
+    free_dataset(train)
+"""
+
+
 def load_from_mat(filename, reference):
     mat = np.loadtxt(str(filename), dtype=np.float64)
     label = mat[:, 0].astype(np.float32)
@@ -166,24 +185,6 @@ def load_from_mat(filename, reference):
     return handle
 
 
-def free_dataset(handle):
-    _safe_call(LIB.LGBM_DatasetFree(handle))
-
-
-def test_dataset():
-    train = load_from_file("binary.train", None)
-    test = load_from_mat("binary.test", train)
-    free_dataset(test)
-    test = load_from_csr("binary.test", train)
-    free_dataset(test)
-    test = load_from_csc("binary.test", train)
-    free_dataset(test)
-    save_to_binary(train, "train.binary.bin")
-    free_dataset(train)
-    train = load_from_file("train.binary.bin", None)
-    free_dataset(train)
-
-
 def test_booster():
     train = load_from_mat("binary.train", None)
     test = load_from_mat("binary.test", train)
@@ -206,10 +207,15 @@ def test_booster():
         if i % 10 == 0:
             print(f"{i} iteration test AUC {result[0]:.6f}")
     _safe_call(LIB.LGBM_BoosterSaveModel(
+        # 00. BoosterHandle handle,
         booster,
+        # 01. int start_iteration,
         ctypes.c_int(0),
+        # 02. int num_iteration,
         ctypes.c_int(-1),
+        # 03. int feature_importance_type,
         ctypes.c_int(0),
+        # 04. const char *filename
         c_str("model.txt")))
     # !! LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(
         # !! BoosterHandle handle,
@@ -253,8 +259,8 @@ def test_booster():
             ctypes.byref(tmp_out_len),
             ptr_string_buffer))
     _safe_call(LIB.LGBM_BoosterFree(booster))
-    free_dataset(train)
-    free_dataset(test)
+    _safe_call(LIB.LGBM_DatasetFree(train))
+    _safe_call(LIB.LGBM_DatasetFree(test))
     booster2 = ctypes.c_void_p()
     model_str = string_buffer.value.decode("utf-8")
 
@@ -267,7 +273,7 @@ def test_booster():
         c_str(model_str),
         ctypes.byref(ctypes.c_int(0)),
         ctypes.byref(booster2)))
-    data = np.loadtxt(str("binary.test"), dtype=np.float64)
+    data = np.loadtxt("binary.test", dtype=np.float64)
     mat = data[:, 1:]
     preb = np.empty(mat.shape[0], dtype=np.float64)
     num_preb = ctypes.c_int64(0)
@@ -287,35 +293,35 @@ def test_booster():
         # !! int64_t *out_len,
         # !! double *out_result)
     _safe_call(LIB.LGBM_BoosterPredictForMat(
-        # !! BoosterHandle handle
+        # 00. BoosterHandle handle
         booster2,
-        # !! const void *data
+        # 01. const void *data
         data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        # !! int data_type
+        # 02. int data_type
         ctypes.c_int(dtype_float64),
-        # !! int32_t nrow
+        # 03. int32_t nrow
         ctypes.c_int32(mat.shape[0]),
-        # !! int32_t ncol
+        # 04. int32_t ncol
         ctypes.c_int32(mat.shape[1]),
-        # !! int is_row_major
+        # 05. int is_row_major
         ctypes.c_int(1),
-        # !! int predict_type
+        # 06. int predict_type
         ctypes.c_int(1),
-        # !! int start_iteration
+        # 07. int start_iteration
         ctypes.c_int(0),
-        # !! int num_iteration
+        # 08. int num_iteration
         ctypes.c_int(25),
-        # !! const char *parameter
+        # 09. const char *parameter
         c_str(""),
-        # !! int64_t *out_len
+        # 10. int64_t *out_len
         ctypes.byref(num_preb),
-        # !! double *out_result
+        # 11. double *out_result
         preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
     ))
     # !! print(preb)
     _safe_call(LIB.LGBM_BoosterPredictForFile(
         booster2,
-        c_str(str("binary.test")),
+        c_str("binary.test"),
         ctypes.c_int(0),
         ctypes.c_int(0),
         ctypes.c_int(0),
@@ -324,7 +330,7 @@ def test_booster():
         c_str("preb.txt")))
     _safe_call(LIB.LGBM_BoosterPredictForFile(
         booster2,
-        c_str(str("binary.test")),
+        c_str("binary.test"),
         ctypes.c_int(0),
         ctypes.c_int(0),
         ctypes.c_int(10),
@@ -332,5 +338,5 @@ def test_booster():
         c_str(""),
         c_str("preb.txt")))
     _safe_call(LIB.LGBM_BoosterFree(booster2))
-test_dataset()
+# !! test_dataset()
 test_booster()
