@@ -11,11 +11,8 @@ elif system() in ("Windows", "Microsoft"):
     lib_file = "./lib_lightgbm.dll"
 else:
     lib_file = "./lib_lightgbm.so"
-print(lib_file)
 LIB = ctypes.cdll.LoadLibrary(lib_file)
-
 LIB.LGBM_GetLastError.restype = ctypes.c_char_p
-
 dtype_float32 = 0
 dtype_float64 = 1
 dtype_int32 = 2
@@ -41,115 +38,6 @@ def c_str(string: str) -> ctypes.c_char_p:
 
 def save_to_binary(handle, filename):
     _safe_call(LIB.LGBM_DatasetSaveBinary(handle, c_str(filename)))
-
-
-"""
-def load_from_file(filename, reference):
-    ref = None
-    if reference is not None:
-        ref = reference
-    handle = ctypes.c_void_p()
-    _safe_call(LIB.LGBM_DatasetCreateFromFile(
-        c_str(str(filename)),
-        c_str("max_bin=15"),
-        ref,
-        ctypes.byref(handle)))
-    print(LIB.LGBM_GetLastError())
-    num_data = ctypes.c_int(0)
-    _safe_call(LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data)))
-    num_feature = ctypes.c_int(0)
-    _safe_call(LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature)))
-    print(f"#data: {num_data.value} #feature: {num_feature.value}")
-    return handle
-
-
-def load_from_csr(filename, reference):
-    data = np.loadtxt(str(filename), dtype=np.float64)
-    csr = sparse.csr_matrix(data[:, 1:])
-    label = data[:, 0].astype(np.float32)
-    handle = ctypes.c_void_p()
-    ref = None
-    if reference is not None:
-        ref = reference
-
-    _safe_call(LIB.LGBM_DatasetCreateFromCSR(
-        csr.indptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-        ctypes.c_int(dtype_int32),
-        csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-        csr.data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        ctypes.c_int(dtype_float64),
-        ctypes.c_int64(len(csr.indptr)),
-        ctypes.c_int64(len(csr.data)),
-        ctypes.c_int64(csr.shape[1]),
-        c_str("max_bin=15"),
-        ref,
-        ctypes.byref(handle)))
-    num_data = ctypes.c_int(0)
-    _safe_call(LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data)))
-    num_feature = ctypes.c_int(0)
-    _safe_call(LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature)))
-    _safe_call(LIB.LGBM_DatasetSetField(
-        handle,
-        c_str("label"),
-        label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-        ctypes.c_int(len(label)),
-        ctypes.c_int(dtype_float32)))
-    print(f"#data: {num_data.value} #feature: {num_feature.value}")
-    return handle
-
-
-def load_from_csc(filename, reference):
-    data = np.loadtxt(str(filename), dtype=np.float64)
-    csc = sparse.csc_matrix(data[:, 1:])
-    label = data[:, 0].astype(np.float32)
-    handle = ctypes.c_void_p()
-    ref = None
-    if reference is not None:
-        ref = reference
-
-    _safe_call(LIB.LGBM_DatasetCreateFromCSC(
-        csc.indptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-        ctypes.c_int(dtype_int32),
-        csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
-        csc.data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        ctypes.c_int(dtype_float64),
-        ctypes.c_int64(len(csc.indptr)),
-        ctypes.c_int64(len(csc.data)),
-        ctypes.c_int64(csc.shape[0]),
-        c_str("max_bin=15"),
-        ref,
-        ctypes.byref(handle)))
-    num_data = ctypes.c_int(0)
-    _safe_call(LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data)))
-    num_feature = ctypes.c_int(0)
-    _safe_call(LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature)))
-    _safe_call(LIB.LGBM_DatasetSetField(
-        handle,
-        c_str("label"),
-        label.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-        ctypes.c_int(len(label)),
-        ctypes.c_int(dtype_float32)))
-    print(f"#data: {num_data.value} #feature: {num_feature.value}")
-    return handle
-
-
-def free_dataset(handle):
-    _safe_call(LIB.LGBM_DatasetFree(handle))
-
-
-def test_dataset():
-    train = load_from_file("binary.train", None)
-    test = load_from_mat("binary.test", train)
-    free_dataset(test)
-    test = load_from_csr("binary.test", train)
-    free_dataset(test)
-    test = load_from_csc("binary.test", train)
-    free_dataset(test)
-    save_to_binary(train, "train.binary.bin")
-    free_dataset(train)
-    train = load_from_file("train.binary.bin", None)
-    free_dataset(train)
-"""
 
 
 def load_from_mat(filename, reference):
