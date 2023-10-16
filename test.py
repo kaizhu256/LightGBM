@@ -275,5 +275,23 @@ def test_booster():
         c_str(""),
         c_str("preb.txt")))
     _safe_call(LIB.LGBM_BoosterFree(booster2))
+
+
+"""
+def test_dataset():
+    train = load_from_file("binary.train", None)
+    test = load_from_mat("binary.test", train)
+    free_dataset(test)
+    test = load_from_csr("binary.test", train)
+    free_dataset(test)
+    test = load_from_csc("binary.test", train)
+    free_dataset(test)
+    save_to_binary(train, "train.binary.bin")
+    # _safe_call(LIB.LGBM_DatasetSaveBinary(handle, c_str(filename)))
+    free_dataset(train)
+    train = load_from_file("train.binary.bin", None)
+    # load_from_file(binary_example_dir / "binary.train", None)
+    free_dataset(train)
+"""
 # !! test_dataset()
 test_booster()
